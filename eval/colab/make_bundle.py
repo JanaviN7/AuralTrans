@@ -27,16 +27,19 @@ def git(*args: str) -> str:
     return out.stdout.strip()
 
 
+def _excluded(rel: Path) -> bool:
+    """True for paths the bundle never contains (reports, caches, secrets, audio)."""
+    return bool(EXCLUDE_PARTS & set(rel.parts)) or rel.name in EXCLUDE_NAMES or rel.suffix in EXCLUDE_SUFFIXES
+
+
 def collect() -> list[Path]:
     files: list[Path] = []
     for item in INCLUDE:
         path = ROOT / item
         candidates = [path] if path.is_file() else sorted(p for p in path.rglob("*") if p.is_file())
         for p in candidates:
-            rel = p.relative_to(ROOT)
-            if EXCLUDE_PARTS & set(rel.parts) or p.name in EXCLUDE_NAMES or p.suffix in EXCLUDE_SUFFIXES:
-                continue
-            files.append(p)
+            if not _excluded(p.relative_to(ROOT)):
+                files.append(p)
     return files
 
 
@@ -46,7 +49,11 @@ def main() -> None:
     args = parser.parse_args()
 
     commit = git("rev-parse", "--short", "HEAD")
-    dirty_files = [line for line in git("status", "--porcelain", "--", *INCLUDE).splitlines() if line]
+    dirty_files = [
+        line
+        for line in git("status", "--porcelain", "--", *INCLUDE).splitlines()
+        if line and not _excluded(Path(line[3:].strip().strip('"')))
+    ]
     if dirty_files and not args.allow_dirty:
         raise SystemExit(
             "Uncommitted changes in bundled paths; commit first (or pass --allow-dirty):\n  "
