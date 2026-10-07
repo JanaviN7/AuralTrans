@@ -58,11 +58,14 @@ def software_line() -> str:
             versions.append(f"{pkg} (not installed)")
     commit = os.environ.get("AURALTRANS_COMMIT", "")
     if not commit:
-        out = subprocess.run(
-            ["git", "-C", str(Path(__file__).parent), "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, check=False,
-        )
-        commit = out.stdout.strip() if out.returncode == 0 else "unknown"
+        try:
+            out = subprocess.run(
+                ["git", "-C", str(Path(__file__).parent), "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, check=False,
+            )
+            commit = out.stdout.strip() if out.returncode == 0 else "unknown"
+        except OSError:  # git is not installed
+            commit = "unknown"
     return f"commit {commit}; " + ", ".join(versions)
 
 

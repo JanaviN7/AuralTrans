@@ -39,6 +39,21 @@ def test_software_line_names_commit_and_packages() -> None:
     assert line.startswith("commit ") and "jiwer" in line
 
 
+def test_software_line_survives_missing_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("AURALTRANS_COMMIT", raising=False)
+
+    def no_git(*args: object, **kwargs: object) -> None:
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(subprocess, "run", no_git)
+    assert software_line().startswith("commit unknown")
+
+
+def test_software_line_uses_commit_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AURALTRANS_COMMIT", "abc1234")
+    assert software_line().startswith("commit abc1234")
+
+
 def test_gpu_sampler_keeps_the_peak(monkeypatch: pytest.MonkeyPatch) -> None:
     values = iter([100.0, 500.0, 300.0] + [200.0] * 1000)
     monkeypatch.setattr(gpu, "used_mib", lambda: next(values))

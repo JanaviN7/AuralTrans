@@ -144,6 +144,7 @@ def run(cmd, cwd=REPO):
 if shutil.which("g++") is None:
     run("apt-get update -qq && apt-get install -y -qq g++")
 run('pip install -q -e "backend[speech,eval]"')
+run("pip install -q pytest")   # the dev tools are not part of the extras
 run("ffmpeg -version | head -1")
 import importlib.metadata as md_
 for pkg in ["faster-whisper", "ctranslate2", "pyannote.audio", "pyannote.metrics", "torch", "jiwer", "meeteval"]:
