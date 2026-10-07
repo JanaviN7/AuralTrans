@@ -1,0 +1,7 @@
+meeting,collar s,DER %,missed %,false alarm %,confusion %,JER %,speakers hyp/ref
+IS1009a,0.0,23.87,11.30,5.10,7.46,36.67,5/4
+IS1009a,0.25,16.02,8.61,2.68,4.73,26.07,5/4
+ES2004a,0.0,19.54,11.37,3.64,4.53,24.33,5/4
+ES2004a,0.25,11.89,7.31,1.74,2.84,15.93,5/4
+ALL (speech-weighted),0.0,21.40,,,,,
+ALL (speech-weighted),0.25,13.66,,,,,

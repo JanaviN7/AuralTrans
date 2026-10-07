@@ -1,0 +1,2 @@
+model,compute,files,WER %,sub,del,ins,ref words,RTF (this run)
+small,int8,1,23.65,92,310,52,1920,0.401
