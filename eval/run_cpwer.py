@@ -59,6 +59,8 @@ def main() -> None:
          ("a = one speaker per Whisper segment (overlap-aware turns); b = per-word overlap assignment "
           "(overlap-aware turns); c = per-word on exclusive turns + smoothing (shipped method)."),
          "ALL rows pool errors over all meetings, not an average of per-meeting rates."],
+        banners=([] if impl == "meeteval" else [
+            "NOT PUBLISHABLE: cpWER computed with the local fallback, not meeteval. Re-run on Linux/Colab."]),
     )
     print("wrote", md)
 

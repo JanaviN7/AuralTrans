@@ -13,6 +13,8 @@ WORDS_XML = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <w nite:id="ES2004a.A.words2" starttime="1.60" endtime="2.00">so</w>
 <w nite:id="ES2004a.A.words3" starttime="9.00" endtime="9.30">next</w>
 <w nite:id="ES2004a.A.words4" starttime="9.30">broken</w>
+<w nite:id="ES2004a.A.words5" starttime="9.30" endtime="9.50" trunc="true">whate</w>
+<gap nite:id="ES2004a.A.words6" starttime="9.5" endtime="9.5"/>
 </nite:root>"""
 
 
@@ -20,6 +22,16 @@ def test_parse_words_skips_punctuation_vocalsounds_and_untimed_words() -> None:
     words = ami.parse_words_xml(WORDS_XML)
     assert [w.text for w in words] == ["Okay", "so", "next"]
     assert words[0].start == 1.0 and words[0].end == 1.4
+
+
+def test_truncated_fragments_are_dropped_unless_requested() -> None:
+    assert "whate" not in [w.text for w in ami.parse_words_xml(WORDS_XML)]
+    assert "whate" in [w.text for w in ami.parse_words_xml(WORDS_XML, include_truncated=True)]
+
+
+def test_parser_accepts_bytes_with_non_utf8_encoding_header() -> None:
+    xml = b'<?xml version="1.0" encoding="ISO-8859-1"?><r><w starttime="0" endtime="1">caf\xe9</w></r>'
+    assert [w.text for w in ami.parse_words_xml(xml)] == ["café"]
 
 
 def test_speaker_segments_split_on_long_pause() -> None:

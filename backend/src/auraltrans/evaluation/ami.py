@@ -52,11 +52,17 @@ def words_paths(data_dir: Path, meeting: str) -> list[Path]:
     return sorted((ami_dir(data_dir) / "words").glob(f"{meeting}.*.words.xml"))
 
 
-def parse_words_xml(xml_text: str) -> list[RefWord]:
-    """Words from one speaker's NXT words file. Punctuation and vocal sounds are dropped."""
+def parse_words_xml(xml: str | bytes, include_truncated: bool = False) -> list[RefWord]:
+    """Words from one speaker's NXT words file.
+
+    Punctuation, vocal sounds, disfluency markers and gaps are dropped. Cut-off word fragments
+    (trunc="true", e.g. "whate") are dropped too unless include_truncated, since ASR never emits them.
+    """
     words: list[RefWord] = []
-    for el in ET.fromstring(xml_text).iter():
+    for el in ET.fromstring(xml).iter():
         if el.tag.rsplit("}", 1)[-1] != "w" or el.get("punc") == "true":
+            continue
+        if el.get("trunc") == "true" and not include_truncated:
             continue
         text = (el.text or "").strip()
         start, end = el.get("starttime"), el.get("endtime")
@@ -79,7 +85,7 @@ def speaker_segments(speaker: str, words: list[RefWord], gap_s: float = GAP_JOIN
     return segments
 
 
-def load_reference(data_dir: Path, meeting: str) -> list[SpeakerText]:
+def load_reference(data_dir: Path, meeting: str, include_truncated: bool = False) -> list[SpeakerText]:
     """Speaker-attributed reference transcript for one meeting, from the downloaded words files."""
     files = words_paths(data_dir, meeting)
     if not files:
@@ -87,7 +93,7 @@ def load_reference(data_dir: Path, meeting: str) -> list[SpeakerText]:
     out: list[SpeakerText] = []
     for f in files:
         speaker = f.name.split(".")[1]
-        out.extend(speaker_segments(speaker, parse_words_xml(f.read_text(encoding="utf-8"))))
+        out.extend(speaker_segments(speaker, parse_words_xml(f.read_bytes(), include_truncated)))
     return sorted(out, key=lambda s: s.start)
 
 

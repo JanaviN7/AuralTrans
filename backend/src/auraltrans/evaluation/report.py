@@ -46,15 +46,27 @@ def write_report(
     columns: list[str],
     rows: list[list[object]],
     notes: list[str],
+    final: bool = False,
+    banners: list[str] | None = None,
 ) -> Path:
-    """Write eval/reports/YYYY-MM-DD_<name>.md and .csv, returning the markdown path."""
+    """Write eval/reports/YYYY-MM-DD_<name>[_PRELIMINARY].md and .csv, returning the markdown path.
+
+    Reports are PRELIMINARY unless the caller passes final=True, which should only happen for the
+    complete evaluation. `banners` are extra warnings shown under the title.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"{_today().isoformat()}_{name}"
+    stem = f"{_today().isoformat()}_{name}" + ("" if final else "_PRELIMINARY")
     with (out_dir / f"{stem}.csv").open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(columns)
         writer.writerows(rows)
-    lines = [f"# {title}", "", f"Date: {_today().isoformat()}  ", f"Hardware: {hardware_line()}", ""]
+    heading = title if final else f"PRELIMINARY: {title}"
+    warnings = list(banners or [])
+    if not final:
+        warnings.insert(0, "PRELIMINARY: partial or early run, not for publication until the full evaluation is complete.")
+    lines = [f"# {heading}", ""]
+    lines.extend(f"> **{w}**" for w in warnings)
+    lines += ["", f"Date: {_today().isoformat()}  ", f"Hardware: {hardware_line()}", ""]
     lines.append("| " + " | ".join(columns) + " |")
     lines.append("|" + "|".join("---" for _ in columns) + "|")
     lines.extend("| " + " | ".join(str(c) for c in row) + " |" for row in rows)
