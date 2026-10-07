@@ -1,0 +1,7 @@
+{
+  "name": "auraltrans-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node flow.mjs" },
+  "devDependencies": { "playwright": "^1.64.0" }
+}
