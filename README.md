@@ -277,5 +277,9 @@ e2e/             real-browser end-to-end test        docs/screenshots/  README i
 - **Single user, no auth**, local file storage, one worker. Fine for a prototype; not a multi-tenant service.
 - Hosted-LLM free tiers are rate limited (see above); transcript text is sent to whichever endpoint you configure,
   so use a local model for sensitive recordings.
-- GitHub Actions CI is defined (`.github/workflows/ci.yml`) but has not been run on GitHub yet. There is no
-  license file yet: choose one before publishing.
+- GitHub Actions CI is defined (`.github/workflows/ci.yml`) and its steps pass locally, but it has not been
+  run on GitHub yet.
+
+## License
+
+[MIT](LICENSE) © 2026 Janavi N.
