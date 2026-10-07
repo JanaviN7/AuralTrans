@@ -137,3 +137,19 @@ def test_delete_prefix_removes_the_whole_recording_folder(tmp_path: Path) -> Non
     s.delete_prefix("recordings/r1")
     assert not s.exists("recordings/r1/a.txt") and s.exists("recordings/r2/c.txt")
     s.delete_prefix("recordings/never-existed")  # no error
+
+
+def test_delete_prefix_removes_read_only_directories(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """OneDrive marks synced folders read-only; deleting a recording must still work (found in a live run)."""
+    import os
+    import stat
+
+    from auraltrans.storage.local import LocalStorage
+
+    store = LocalStorage(tmp_path)
+    store.put("recordings/abc/audio_16k.wav", b"x")
+    store.put("recordings/abc/sub/asr.json", b"{}")
+    for path in (tmp_path / "recordings" / "abc" / "sub" / "asr.json", tmp_path / "recordings" / "abc" / "sub", tmp_path / "recordings" / "abc"):
+        os.chmod(path, stat.S_IREAD)
+    store.delete_prefix("recordings/abc")
+    assert not (tmp_path / "recordings" / "abc").exists()

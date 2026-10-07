@@ -1,6 +1,9 @@
 """Local-disk storage behind a small interface (put, get, path, exists, delete_prefix)."""
 
+import os
 import shutil
+import stat
+from collections.abc import Callable
 from pathlib import Path
 from typing import BinaryIO, Protocol
 
@@ -12,6 +15,13 @@ class Storage(Protocol):
     def exists(self, key: str) -> bool: ...
     def local_path(self, key: str) -> Path: ...
     def delete_prefix(self, prefix: str) -> None: ...
+
+
+def _clear_readonly_and_retry(func: Callable[[str], object], path: str, _exc: object) -> None:
+    """rmtree error hook. Synced folders (OneDrive) mark directories read-only, which Windows
+    refuses to delete; clear the flag and retry once."""
+    os.chmod(path, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+    func(path)
 
 
 class LocalStorage:
@@ -57,6 +67,6 @@ class LocalStorage:
     def delete_prefix(self, prefix: str) -> None:
         target = self._resolve(prefix)
         if target.is_dir():
-            shutil.rmtree(target)
+            shutil.rmtree(target, onerror=_clear_readonly_and_retry)
         elif target.exists():
             target.unlink()
