@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +14,8 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_api_key: str = ""
     llm_model: str = ""
+    # Eval audio and caches live outside the repo (and outside OneDrive).
+    eval_data_dir: Path = Path.home() / "auraltrans-data"
 
 
 settings = Settings()

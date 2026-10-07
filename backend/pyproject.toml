@@ -11,6 +11,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+eval = ["jiwer>=3.0", "pyannote.metrics>=3.2", "meeteval>=0.4; sys_platform != 'win32'", "whisper-normalizer>=0.1", "pyarrow>=15"]
 speech = ["faster-whisper>=1.1", "pyannote.audio>=4.0", "soundfile>=0.12"]
 
 [dependency-groups]
@@ -35,6 +36,6 @@ strict = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["faster_whisper.*", "pyannote.*", "torch.*", "soundfile.*"]
+module = ["faster_whisper.*", "pyannote.*", "torch.*", "soundfile.*", "jiwer.*", "scipy.*", "whisper_normalizer.*", "huggingface_hub.*", "pyarrow.*", "meeteval.*"]
 ignore_missing_imports = true
 follow_untyped_imports = true
