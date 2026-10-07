@@ -140,6 +140,9 @@ def run(cmd, cwd=REPO):
     if rc:
         raise RuntimeError(f"command failed (exit {rc}): {cmd}")
 
+# meeteval ships no wheels and compiles C++ at install time, so a compiler is required.
+if shutil.which("g++") is None:
+    run("apt-get update -qq && apt-get install -y -qq g++")
 run('pip install -q -e "backend[speech,eval]"')
 run("ffmpeg -version | head -1")
 import importlib.metadata as md_
