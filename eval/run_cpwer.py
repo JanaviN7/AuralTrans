@@ -25,13 +25,14 @@ def main() -> None:
     parser.add_argument("--model", default="small")
     parser.add_argument("--compute-type", default="int8")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--meetings", nargs="+", default=None, help="AMI meeting ids")
     args = parser.parse_args()
     data_dir = settings.eval_data_dir
 
     totals = {name: [0, 0, 0, 0, 0] for name in VARIANTS}
     rows: list[list[object]] = []
     impl = ""
-    for m in ami.TEST_SUBSET[: args.limit]:
+    for m in ami.select_meetings(args.meetings, args.limit):
         asr = load_cached(cache_path(data_dir, "asr", f"ami_{args.model}_{args.compute_type}", m), AsrResult)
         diar = load_cached(cache_path(data_dir, "diarization", "community-1", m), DiarizationResult)
         if asr is None or diar is None:

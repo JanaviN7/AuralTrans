@@ -23,13 +23,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--meetings", nargs="+", default=None, help="AMI meeting ids")
     args = parser.parse_args()
     data_dir = settings.eval_data_dir
 
     diarizer: PyannoteDiarizer | None = None
     rows: list[list[object]] = []
     pooled: dict[float, list[tuple[DerResult, float]]] = {0.0: [], 0.25: []}
-    for m in ami.TEST_SUBSET[: args.limit]:
+    for m in ami.select_meetings(args.meetings, args.limit):
         cp = cache_path(data_dir, "diarization", "community-1", m)
         hyp = load_cached(cp, DiarizationResult)
         if hyp is None:

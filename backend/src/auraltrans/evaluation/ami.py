@@ -32,6 +32,16 @@ class RefWord:
     text: str
 
 
+def select_meetings(meetings: list[str] | None, limit: int | None) -> list[str]:
+    """Explicit meeting ids (validated against the subset) or the first `limit` of the subset."""
+    if meetings:
+        unknown = [m for m in meetings if m not in TEST_SUBSET]
+        if unknown:
+            raise ValueError(f"not in the AMI test subset: {unknown}")
+        return meetings
+    return TEST_SUBSET[:limit]
+
+
 def ami_dir(data_dir: Path) -> Path:
     return data_dir / "ami"
 

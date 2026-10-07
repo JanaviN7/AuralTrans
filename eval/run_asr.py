@@ -20,14 +20,14 @@ from auraltrans.speech.audio import prepare_audio
 REPORTS = Path(__file__).parent / "reports"
 
 
-def items(dataset: str, limit: int | None) -> list[tuple[str, Path, str]]:
+def items(dataset: str, limit: int | None, meetings: list[str] | None) -> list[tuple[str, Path, str]]:
     """(id, audio path, reference text)."""
     data_dir = settings.eval_data_dir
     if dataset == "librispeech":
         rows = librispeech.load_manifest(data_dir)[:limit]
         return [(r["id"], Path(r["audio"]), r["text"]) for r in rows]
     out = []
-    for m in ami.TEST_SUBSET[:limit]:
+    for m in ami.select_meetings(meetings, limit):
         text = " ".join(s.text for s in ami.load_reference(data_dir, m))
         out.append((m, ami.audio_path(data_dir, m), text))
     return out
@@ -40,9 +40,10 @@ def main() -> None:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--compute-type", default="int8")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--meetings", nargs="+", default=None, help="AMI meeting ids")
     args = parser.parse_args()
     data_dir = settings.eval_data_dir
-    work = items(args.dataset, args.limit)
+    work = items(args.dataset, args.limit, args.meetings)
 
     rows: list[list[object]] = []
     for model in args.models:
