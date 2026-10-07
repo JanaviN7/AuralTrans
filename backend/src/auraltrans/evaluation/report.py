@@ -2,7 +2,10 @@
 
 import csv
 import datetime as dt
+import os
 import platform
+import subprocess
+from importlib import metadata
 from pathlib import Path
 from typing import TypeVar
 
@@ -39,6 +42,36 @@ def hardware_line() -> str:
     return "; ".join(parts)
 
 
+_TRACKED_PACKAGES = (
+    "faster-whisper", "ctranslate2", "pyannote.audio", "pyannote.metrics", "torch",
+    "jiwer", "meeteval", "whisper-normalizer",
+)
+
+
+def software_line() -> str:
+    """Package versions and git commit, so a result can be tied to the code that produced it."""
+    versions = []
+    for pkg in _TRACKED_PACKAGES:
+        try:
+            versions.append(f"{pkg} {metadata.version(pkg)}")
+        except metadata.PackageNotFoundError:
+            versions.append(f"{pkg} (not installed)")
+    commit = os.environ.get("AURALTRANS_COMMIT", "")
+    if not commit:
+        out = subprocess.run(
+            ["git", "-C", str(Path(__file__).parent), "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, check=False,
+        )
+        commit = out.stdout.strip() if out.returncode == 0 else "unknown"
+    return f"commit {commit}; " + ", ".join(versions)
+
+
+def require_final(problems: list[str]) -> None:
+    """Refuse to write a final (publishable) report unless every condition holds."""
+    if problems:
+        raise SystemExit("--final refused:\n  - " + "\n  - ".join(problems))
+
+
 def write_report(
     out_dir: Path,
     name: str,
@@ -66,7 +99,7 @@ def write_report(
         warnings.insert(0, "PRELIMINARY: partial or early run, not for publication until the full evaluation is complete.")
     lines = [f"# {heading}", ""]
     lines.extend(f"> **{w}**" for w in warnings)
-    lines += ["", f"Date: {_today().isoformat()}  ", f"Hardware: {hardware_line()}", ""]
+    lines += ["", f"Date: {_today().isoformat()}  ", f"Hardware: {hardware_line()}", f"Software: {software_line()}", ""]
     lines.append("| " + " | ".join(columns) + " |")
     lines.append("|" + "|".join("---" for _ in columns) + "|")
     lines.extend("| " + " | ".join(str(c) for c in row) + " |" for row in rows)

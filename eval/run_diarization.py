@@ -12,7 +12,13 @@ from pathlib import Path
 from auraltrans.config import settings
 from auraltrans.evaluation import ami
 from auraltrans.evaluation.metrics import DerResult, der
-from auraltrans.evaluation.report import cache_path, load_cached, save_cached, write_report
+from auraltrans.evaluation.report import (
+    cache_path,
+    load_cached,
+    require_final,
+    save_cached,
+    write_report,
+)
 from auraltrans.speech.audio import prepare_audio
 from auraltrans.speech.diarize import DiarizationResult, PyannoteDiarizer
 
@@ -24,7 +30,15 @@ def main() -> None:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--meetings", nargs="+", default=None, help="AMI meeting ids")
+    parser.add_argument("--final", action="store_true", help="write a final (non-preliminary) report")
     args = parser.parse_args()
+    if args.final:
+        problems = []
+        if args.limit is not None or args.meetings:
+            problems.append("--limit/--meetings select a subset; final reports need all 10 meetings")
+        if args.device != "cuda":
+            problems.append(f"final results come from the GPU run (device is '{args.device}')")
+        require_final(problems)
     data_dir = settings.eval_data_dir
 
     diarizer: PyannoteDiarizer | None = None
@@ -60,6 +74,7 @@ def main() -> None:
         ["Pipeline: pyannote/speaker-diarization-community-1, no speaker-count hint, overlap-aware output scored.",
          "Reference: AMI-diarization-setup only_words RTTM; scoring region from the UEM files.",
          "Collar 0 is the strict setting; collar 0.25 forgives +/-0.25 s around each reference boundary (NIST convention)."],
+        final=args.final,
     )
     print("wrote", md)
 

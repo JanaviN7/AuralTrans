@@ -30,6 +30,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+extend-exclude = ["*.ipynb"]
 
 [tool.mypy]
 strict = true

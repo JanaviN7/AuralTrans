@@ -32,10 +32,17 @@ class ASRBackend(Protocol):
 
 
 class FasterWhisperBackend:
-    def __init__(self, model_size: str = "small", device: str = "cpu", compute_type: str = "int8"):
+    def __init__(
+        self,
+        model_size: str = "small",
+        device: str = "cpu",
+        compute_type: str = "int8",
+        vad_filter: bool = True,
+    ):
         from faster_whisper import WhisperModel
 
         self.model_size = model_size
+        self.vad_filter = vad_filter
         self._model = WhisperModel(model_size, device=device, compute_type=compute_type)
         self._batched = None
         if device == "cuda":
@@ -49,7 +56,7 @@ class FasterWhisperBackend:
             str(audio_path),
             language=language,
             word_timestamps=True,
-            vad_filter=True,
+            vad_filter=self.vad_filter,
             condition_on_previous_text=False,
         )
         out: list[AsrSegment] = []
