@@ -28,6 +28,26 @@ Rules:
 - Reply with ONE JSON object: {"answerable": true|false, "answer": "...", "citations": [{"id": "u12", "quote": "..."}]}"""
 
 
+JSON_SCHEMA: dict[str, object] = {
+    "type": "object",
+    "properties": {
+        "answerable": {"type": "boolean"},
+        "answer": {"type": "string"},
+        "citations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"id": {"type": "string"}, "quote": {"type": "string"}},
+                "required": ["id", "quote"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["answerable", "answer", "citations"],
+    "additionalProperties": False,
+}
+
+
 class _RawCitation(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str | int
@@ -68,7 +88,8 @@ def ask(llm: LLM, question: str, title: str, lines: list[Line]) -> AskResult:
     started = time.perf_counter()
     user = f'Recording: "{title}"\n\n<transcript>\n{render(lines)}\n</transcript>\n\nQuestion: {question}'
     raw, _ = complete_validated(
-        llm, SYSTEM, user, _RawAnswer, purpose="ask", prompt_version=PROMPT_VERSION, max_tokens=700
+        llm, SYSTEM, user, _RawAnswer, purpose="ask", prompt_version=PROMPT_VERSION, max_tokens=1200,
+        schema=JSON_SCHEMA,
     )
     result = verify(raw, lines)
     result.model = llm.model
@@ -91,7 +112,9 @@ def verify(raw: _RawAnswer, lines: list[Line]) -> AskResult:
             good.setdefault(idx, c.quote.strip())  # type: ignore[arg-type]
     if not good:
         return abstain("no_valid_citation")
-    ratio, numbers_ok = support_ratio(raw.answer, [by_idx[i].text for i in good])
+    ratio, numbers_ok = support_ratio(
+        raw.answer, [by_idx[i].text for i in good], sorted({line.speaker for line in lines})
+    )
     if ratio < SUPPORT_THRESHOLD or not numbers_ok:
         return abstain("unsupported_answer")
     return AskResult(

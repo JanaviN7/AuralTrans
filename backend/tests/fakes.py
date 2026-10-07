@@ -80,7 +80,9 @@ class ScriptedLLM:
         self.replies = list(replies)
         self.calls: list[tuple[str, str]] = []
 
-    def complete(self, system: str, user: str, *, max_tokens: int = 2000) -> LLMResult:
+    def complete(
+        self, system: str, user: str, *, max_tokens: int = 2000, schema: dict | None = None  # type: ignore[type-arg]
+    ) -> LLMResult:
         self.calls.append((system, user))
         reply = self.replies.pop(0) if len(self.replies) > 1 else self.replies[0]
         if callable(reply):

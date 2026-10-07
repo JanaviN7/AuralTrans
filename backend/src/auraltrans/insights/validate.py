@@ -24,7 +24,9 @@ from auraltrans.schemas.insights import (
     SummaryPoint,
 )
 
+# A summary synthesises many lines, so it is held to a looser wording test (numbers are still checked).
 SUPPORT_THRESHOLD = 0.3
+SUMMARY_THRESHOLD = 0.2
 
 
 class _Raw(BaseModel):
@@ -76,8 +78,12 @@ class RawInsights(_Raw):
 _UID = re.compile(r"^\W*u?(\d+)\W*$", re.IGNORECASE)
 
 
+_LEADING_UID = re.compile(r"^\[u(\d+)[\s\]]", re.IGNORECASE)
+
+
 def parse_uid(value: str | int) -> int | None:
-    m = _UID.match(str(value).strip())
+    text = str(value).strip()
+    m = _UID.match(text) or _LEADING_UID.match(text)  # a whole pasted line: "[u3 00:12 Ann] ..."
     return int(m.group(1)) if m else None
 
 
@@ -115,7 +121,8 @@ def merge_raw(parts: list[RawInsights]) -> RawInsights:
 
 
 class _Checker:
-    def __init__(self, lines: list[Line]) -> None:
+    def __init__(self, lines: list[Line], names: list[str]) -> None:
+        self.names = names
         self.by_idx = {line.idx: line for line in lines}
         self.stats: dict[str, dict[str, int]] = {}
 
@@ -131,7 +138,9 @@ class _Checker:
                 bad += 1
         return [found[i] for i in sorted(found)], bad
 
-    def cited(self, section: str, claim: str, raw: list[str | int]) -> tuple[list[Citation], str] | None:
+    def cited(
+        self, section: str, claim: str, raw: list[str | int], threshold: float = SUPPORT_THRESHOLD
+    ) -> tuple[list[Citation], str] | None:
         st = self.stats.setdefault(
             section, {"proposed": 0, "kept": 0, "dropped_no_evidence": 0, "invalid_citations": 0, "unverified": 0}
         )
@@ -141,8 +150,8 @@ class _Checker:
         if not lines:
             st["dropped_no_evidence"] += 1
             return None
-        ratio, numbers_ok = support_ratio(claim, [ln.text for ln in lines])
-        status = "verified" if ratio >= SUPPORT_THRESHOLD and numbers_ok else "unverified"
+        ratio, numbers_ok = support_ratio(claim, [ln.text for ln in lines], self.names)
+        status = "verified" if ratio >= threshold and numbers_ok else "unverified"
         st["kept"] += 1
         st["unverified"] += status == "unverified"
         return [Citation(utterance_id=ln.uid) for ln in lines], status
@@ -164,7 +173,7 @@ def validate_insights(
     raw: RawInsights, lines: list[Line], speakers: dict[str, str]
 ) -> tuple[Insights, dict[str, Any]]:
     """`speakers` maps display name -> speaker id. Returns the checked payload and a report."""
-    chk = _Checker(lines)
+    chk = _Checker(lines, list(speakers))
 
     def points(section: str, items: list[RawItem], cls: type[SummaryPoint] | type[Decision] | type[OpenQuestion]) -> list[Any]:
         out = []
@@ -176,7 +185,7 @@ def validate_insights(
 
     summary = None
     if raw.summary and raw.summary.text.strip():
-        r = chk.cited("summary", raw.summary.text, raw.summary.evidence)
+        r = chk.cited("summary", raw.summary.text, raw.summary.evidence, SUMMARY_THRESHOLD)
         if r:
             summary = SummaryPoint(text=raw.summary.text.strip(), evidence=r[0], status=r[1])
 

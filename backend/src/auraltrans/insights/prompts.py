@@ -20,6 +20,26 @@ SCHEMA = """{
 }"""
 
 
+def _obj(**props: object) -> dict[str, object]:
+    return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
+
+
+_STR = {"type": "string"}
+_NULL_STR = {"type": ["string", "null"]}
+_IDS = {"type": "array", "items": _STR}
+_CITED = _obj(text=_STR, evidence=_IDS)
+
+# Strict-mode JSON schema (every property required, no extras) for constrained decoding.
+JSON_SCHEMA = _obj(
+    summary={"anyOf": [_CITED, {"type": "null"}]},
+    key_points={"type": "array", "items": _CITED},
+    decisions={"type": "array", "items": _CITED},
+    action_items={"type": "array", "items": _obj(task=_STR, owner=_NULL_STR, due=_NULL_STR, evidence=_IDS)},
+    open_questions={"type": "array", "items": _CITED},
+    chapters={"type": "array", "items": _obj(title=_STR, start=_STR, end=_STR)},
+)
+
+
 def user_prompt(
     title: str, kind: str, speakers: list[str], transcript: str, part: int, parts: int, first: str, last: str
 ) -> str:

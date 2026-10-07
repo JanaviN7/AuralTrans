@@ -71,7 +71,8 @@ def _generate(insight_id: uuid.UUID, llm: LLM) -> tuple[dict, dict, str]:  # typ
         )
         raw, was_repaired = complete_validated(
             llm, prompts.SYSTEM, user, RawInsights,
-            purpose="insights", prompt_version=prompts.PROMPT_VERSION, max_tokens=2500,
+            purpose="insights", prompt_version=prompts.PROMPT_VERSION, max_tokens=3000,
+            schema=prompts.JSON_SCHEMA,
         )
         parts.append(raw)
         repaired += was_repaired

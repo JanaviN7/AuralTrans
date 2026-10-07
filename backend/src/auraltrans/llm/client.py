@@ -3,7 +3,7 @@
 import json
 import time
 from dataclasses import dataclass
-from typing import Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 import httpx
 from pydantic import BaseModel, ValidationError
@@ -30,10 +30,15 @@ class LLMResult:
     latency_ms: int = 0
 
 
+Schema = dict[str, Any]
+
+
 class LLM(Protocol):
     model: str
 
-    def complete(self, system: str, user: str, *, max_tokens: int = 2000) -> LLMResult: ...
+    def complete(
+        self, system: str, user: str, *, max_tokens: int = 2000, schema: Schema | None = None
+    ) -> LLMResult: ...
 
 
 class OpenAICompatLLM:
@@ -42,8 +47,12 @@ class OpenAICompatLLM:
         self.model = model
         self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._timeout = timeout_s
+        mode = settings.llm_strict_schema
+        self.strict_schema = mode == "on" or (mode == "auto" and model.startswith("openai/gpt-oss"))
 
-    def complete(self, system: str, user: str, *, max_tokens: int = 2000) -> LLMResult:
+    def complete(
+        self, system: str, user: str, *, max_tokens: int = 2000, schema: Schema | None = None
+    ) -> LLMResult:
         body: dict[str, object] = {
             "model": self.model,
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -51,6 +60,14 @@ class OpenAICompatLLM:
             "max_tokens": max_tokens,
             "response_format": {"type": "json_object"},
         }
+        if schema is not None and self.strict_schema:
+            # Constrained decoding (Groq: gpt-oss models). Falls back to json_object if rejected.
+            body["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {"name": "result", "strict": True, "schema": schema},
+            }
+        if settings.llm_reasoning_effort and self.model.startswith("openai/gpt-oss"):
+            body["reasoning_effort"] = settings.llm_reasoning_effort
         started = time.perf_counter()
         data = self._post(body)
         try:
@@ -67,18 +84,28 @@ class OpenAICompatLLM:
         )
 
     def _post(self, body: dict[str, object]) -> dict:  # type: ignore[type-arg]
-        for attempt in range(4):
+        for attempt in range(6):
             try:
                 r = httpx.post(self.url, json=body, headers=self._headers, timeout=self._timeout)
             except httpx.HTTPError as exc:
                 raise LLMError(f"could not reach the language model: {exc}") from exc
-            if r.status_code == 400 and "response_format" in body:
+            rf = body.get("response_format")
+            if r.status_code == 400 and isinstance(rf, dict) and rf.get("type") == "json_schema":
+                body = {**body, "response_format": {"type": "json_object"}}  # schema not supported here
+                continue
+            if r.status_code == 400 and rf is not None:
                 # Some servers do not support JSON mode; the prompt still demands JSON.
                 body = {k: v for k, v in body.items() if k != "response_format"}
                 continue
-            if r.status_code in (429, 503) and attempt < 3:
-                time.sleep(min(float(r.headers.get("retry-after", 2 * (attempt + 1))), 30.0))
+            if r.status_code in (429, 503) and attempt < 4:
+                # Free tiers limit tokens per minute: wait for the window to reset.
+                time.sleep(min(float(r.headers.get("retry-after", 5 * (attempt + 1))) + 1, 60.0))
                 continue
+            if r.status_code == 413:
+                raise LLMError(
+                    "this request is larger than the model's per-request limit; lower LLM_CHUNK_CHARS / "
+                    "LLM_CONTEXT_CHARS or use a higher-limit plan or model"
+                )
             if r.status_code >= 400:
                 raise LLMError(f"language model error {r.status_code}: {r.text[:200]}")
             return r.json()  # type: ignore[no-any-return]
@@ -126,7 +153,7 @@ M = TypeVar("M", bound=BaseModel)
 
 def complete_validated(
     llm: LLM, system: str, user: str, model_cls: type[M], *, purpose: str, prompt_version: str,
-    max_tokens: int = 2000,
+    max_tokens: int = 2000, schema: Schema | None = None,
 ) -> tuple[M, bool]:
     """Call the model, validate against `model_cls`, and retry once with the errors fed back.
 
@@ -136,7 +163,7 @@ def complete_validated(
     reply = user
     for attempt in range(2):
         try:
-            result = llm.complete(system, reply, max_tokens=max_tokens)
+            result = llm.complete(system, reply, max_tokens=max_tokens, schema=schema)
         except LLMError:
             record_call(purpose, llm.model, prompt_version, "error", None)
             raise

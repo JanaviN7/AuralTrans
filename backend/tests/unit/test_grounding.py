@@ -195,3 +195,21 @@ def test_quote_matching_ignores_case_and_punctuation_but_not_content() -> None:
     assert quote_in("we AGREED to move the launch", TEXTS[1])
     assert not quote_in("we agreed to cancel the launch", TEXTS[1])
     assert not quote_in("", TEXTS[1])
+
+
+def test_speaker_names_with_digits_do_not_count_as_invented_numbers() -> None:
+    # Found with a real model: "Speaker 2 will send ..." was flagged because "2" is not in the cited line.
+    ratio, ok = support_ratio("Speaker 2 will send the report", ["I will send it by Friday, the report."])
+    assert ok and ratio > 0.3
+    _, ok = support_ratio("Priya will send 3 reports", ["I will send the report."], names=["Priya"])
+    assert not ok  # a genuinely invented number is still caught
+
+
+def test_spoken_compound_numbers_match_digits() -> None:
+    assert support_ratio("Selling price is 25", ["a selling price at twenty five Euros"])[1]
+    assert not support_ratio("Selling price is 35", ["a selling price at twenty five Euros"])[1]
+
+
+def test_parse_uid_recovers_the_id_when_a_model_pastes_the_whole_line() -> None:
+    assert parse_uid("[u3 00:12 Ann] We agreed to ship") == 3
+    assert parse_uid("12 apples and 3 pears") is None

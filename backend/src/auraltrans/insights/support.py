@@ -18,6 +18,8 @@ _NUMBER_WORDS = {
         ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
     )
 } | {"thirty": "30", "forty": "40", "fifty": "50", "sixty": "60", "hundred": "100"}
+_TENS = {"twenty": "20", "thirty": "30", "forty": "40", "fifty": "50", "sixty": "60", "seventy": "70", "eighty": "80", "ninety": "90"}
+_UNITS = {w: str(n) for n, w in enumerate("one two three four five six seven eight nine".split(), 1)}  # noqa: SIM905
 _WORD = re.compile(r"[a-z0-9]+(?:\.[0-9]+)?")
 
 
@@ -34,7 +36,15 @@ def normalize(text: str) -> str:
 
 def content_tokens(text: str) -> set[str]:
     out: set[str] = set()
-    for w in _WORD.findall(text.lower().replace("'", "")):
+    raw = _WORD.findall(text.lower().replace("'", ""))
+    words: list[str] = []
+    for w in raw:  # "twenty five" -> "25"
+        prev = words[-1] if words else ""
+        if prev in _TENS and w in _UNITS:
+            words[-1] = str(int(_TENS[prev]) + int(_UNITS[w]))
+        else:
+            words.append(w)
+    for w in words:
         w = _NUMBER_WORDS.get(w, w)
         if w in _STOP or (len(w) < 3 and not w.isdigit()):
             continue
@@ -46,8 +56,18 @@ def numbers(text: str) -> set[str]:
     return {t for t in content_tokens(text) if t[0].isdigit()}
 
 
-def support_ratio(claim: str, cited: list[str]) -> tuple[float, bool]:
+def strip_names(text: str, names: list[str]) -> str:
+    """Remove speaker names ("Speaker 2", "Priya") so they count neither as words nor numbers."""
+    text = re.sub(r"\bspeaker\s*\d+\b", " ", text, flags=re.IGNORECASE)
+    for name in sorted(names, key=len, reverse=True):
+        if name.strip():
+            text = re.sub(re.escape(name), " ", text, flags=re.IGNORECASE)
+    return text
+
+
+def support_ratio(claim: str, cited: list[str], names: list[str] | None = None) -> tuple[float, bool]:
     """(fraction of the claim's content words found in the cited lines, no number is invented)."""
+    claim = strip_names(claim, names or [])
     claim_tokens = content_tokens(claim)
     if not claim_tokens:
         return 1.0, True
