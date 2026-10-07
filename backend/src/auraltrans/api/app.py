@@ -1,4 +1,4 @@
-"""FastAPI app. Run with: uvicorn auraltrans.api.app:app --reload --port 8000"""
+"""FastAPI app. Run with: uvicorn auraltrans.api.app:app --reload --port 8765"""
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
