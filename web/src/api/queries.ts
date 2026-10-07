@@ -6,6 +6,8 @@ export const keys = {
   recording: (id: string) => ["recording", id] as const,
   transcript: (id: string) => ["transcript", id] as const,
   analytics: (id: string) => ["analytics", id] as const,
+  insights: (id: string) => ["insights", id] as const,
+  ask: (id: string) => ["ask", id] as const,
   health: ["health"] as const,
 };
 
@@ -27,3 +29,15 @@ export const useTranscript = (id: string, enabled: boolean) =>
 
 export const useAnalytics = (id: string, enabled: boolean) =>
   useQuery({ queryKey: keys.analytics(id), queryFn: () => api.getAnalytics(id), enabled });
+
+export const useInsights = (id: string, enabled: boolean) =>
+  useQuery({
+    queryKey: keys.insights(id),
+    queryFn: () => api.getInsights(id),
+    enabled,
+    // Generation runs in the background on the server; poll until it settles.
+    refetchInterval: (query) => (query.state.data?.status === "running" ? 2500 : false),
+  });
+
+export const useAskHistory = (id: string, enabled: boolean) =>
+  useQuery({ queryKey: keys.ask(id), queryFn: () => api.getAsk(id), enabled });

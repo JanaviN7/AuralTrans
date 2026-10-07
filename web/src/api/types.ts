@@ -11,6 +11,10 @@ export type Transcript = S["TranscriptOut"];
 export type Analytics = S["AnalyticsOut"];
 export type SpeakerStats = S["SpeakerStatsOut"];
 export type Health = S["HealthOut"];
+export type InsightsResponse = S["InsightsOut"];
+export type InsightsData = S["Insights"];
+export type AskTurn = S["AskTurnOut"];
+export type AskCitation = S["AskCitationOut"];
 
 export const EXPORT_FORMATS = [
   { id: "srt", label: "SRT subtitles", hint: "Timed captions with speaker names, for video players" },

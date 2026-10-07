@@ -4,12 +4,14 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useTranscript } from "../api/queries";
 import type { Recording } from "../api/types";
+import { EvidenceProvider } from "../components/Evidence";
 import { ExportDialog } from "../components/ExportDialog";
 import { ArrowLeftIcon, DownloadIcon, TrashIcon } from "../components/Icons";
 import { PlayerBar } from "../components/PlayerBar";
 import { formatDate, formatDuration, languageName } from "../format";
 import { PlayerProvider } from "../hooks/player";
-import { AskTab, InsightsTab } from "./FeatureTabs";
+import { AskTab } from "./AskTab";
+import { InsightsTab } from "./InsightsTab";
 import { SpeakersTab } from "./SpeakersTab";
 import { TranscriptTab } from "./TranscriptTab";
 
@@ -69,6 +71,7 @@ export function Workspace({ recording }: { recording: Recording }) {
       {transcript.isPending && <p className="muted pad">Loading transcript…</p>}
       {transcript.isError && <p className="field-error pad">Could not load the transcript: {transcript.error.message}</p>}
       {transcript.data && (
+        <EvidenceProvider transcript={transcript.data}>
         <PlayerProvider src={api.audioUrl(recording.id)} fallbackDuration={recording.duration_s}>
           <div className="sticky-player">
             <PlayerBar transcript={transcript.data} />
@@ -88,11 +91,12 @@ export function Workspace({ recording }: { recording: Recording }) {
           </div>
           <div className="tab-panel" role="tabpanel">
             {tab === "transcript" && <TranscriptTab recordingId={recording.id} transcript={transcript.data} />}
-            {tab === "insights" && <InsightsTab />}
+            {tab === "insights" && <InsightsTab recordingId={recording.id} transcript={transcript.data} />}
             {tab === "speakers" && <SpeakersTab recordingId={recording.id} transcript={transcript.data} />}
-            {tab === "ask" && <AskTab />}
+            {tab === "ask" && <AskTab recordingId={recording.id} transcript={transcript.data} />}
           </div>
         </PlayerProvider>
+        </EvidenceProvider>
       )}
       <ExportDialog open={exporting} onClose={() => setExporting(false)} recordingId={recording.id} />
       {remove.isError && <p className="field-error">{remove.error.message}</p>}

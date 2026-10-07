@@ -606,10 +606,231 @@
           }
         }
       }
+    },
+    "/api/recordings/{recording_id}/insights": {
+      "get": {
+        "summary": "Get Insights",
+        "operationId": "get_insights_api_recordings__recording_id__insights_get",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Generate Insights",
+        "operationId": "generate_insights_api_recordings__recording_id__insights_post",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recordings/{recording_id}/ask": {
+      "get": {
+        "summary": "Ask History",
+        "operationId": "ask_history_api_recordings__recording_id__ask_get",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AskTurnOut"
+                  },
+                  "title": "Response Ask History Api Recordings  Recording Id  Ask Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Ask Question",
+        "operationId": "ask_question_api_recordings__recording_id__ask_post",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskTurnOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ActionItem": {
+        "properties": {
+          "task": {
+            "type": "string",
+            "title": "Task"
+          },
+          "owner_speaker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Speaker Id"
+          },
+          "due_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Text"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "unverified"
+            ],
+            "title": "Status",
+            "default": "verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task"
+        ],
+        "title": "ActionItem"
+      },
       "AnalyticsOut": {
         "properties": {
           "duration_s": {
@@ -635,6 +856,133 @@
           "speakers"
         ],
         "title": "AnalyticsOut"
+      },
+      "AskCitationOut": {
+        "properties": {
+          "uid": {
+            "type": "string",
+            "title": "Uid"
+          },
+          "utterance_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Utterance Id"
+          },
+          "speaker_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speaker Id"
+          },
+          "start_s": {
+            "type": "number",
+            "title": "Start S"
+          },
+          "end_s": {
+            "type": "number",
+            "title": "End S"
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uid",
+          "utterance_id",
+          "speaker_id",
+          "start_s",
+          "end_s",
+          "quote"
+        ],
+        "title": "AskCitationOut"
+      },
+      "AskIn": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskIn"
+      },
+      "AskTurnOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "abstained": {
+            "type": "boolean",
+            "title": "Abstained"
+          },
+          "abstain_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "model_declined",
+                  "no_valid_citation",
+                  "unsupported_answer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abstain Reason"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/AskCitationOut"
+            },
+            "type": "array",
+            "title": "Citations"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "answer",
+          "abstained",
+          "abstain_reason",
+          "citations",
+          "model",
+          "created_at"
+        ],
+        "title": "AskTurnOut"
       },
       "Body_upload_recording_api_recordings_post": {
         "properties": {
@@ -703,6 +1051,71 @@
         ],
         "title": "Body_upload_recording_api_recordings_post"
       },
+      "Chapter": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "start_uid": {
+            "type": "string",
+            "title": "Start Uid"
+          },
+          "end_uid": {
+            "type": "string",
+            "title": "End Uid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "start_uid",
+          "end_uid"
+        ],
+        "title": "Chapter"
+      },
+      "Citation": {
+        "properties": {
+          "utterance_id": {
+            "type": "string",
+            "title": "Utterance Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "utterance_id"
+        ],
+        "title": "Citation"
+      },
+      "Decision": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "unverified"
+            ],
+            "title": "Status",
+            "default": "verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "Decision"
+      },
       "FeaturesOut": {
         "properties": {
           "insights": {
@@ -751,6 +1164,154 @@
           "features"
         ],
         "title": "HealthOut"
+      },
+      "Insights": {
+        "properties": {
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SummaryPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key_points": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryPoint"
+            },
+            "type": "array",
+            "title": "Key Points",
+            "default": []
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/Decision"
+            },
+            "type": "array",
+            "title": "Decisions",
+            "default": []
+          },
+          "action_items": {
+            "items": {
+              "$ref": "#/components/schemas/ActionItem"
+            },
+            "type": "array",
+            "title": "Action Items",
+            "default": []
+          },
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/Chapter"
+            },
+            "type": "array",
+            "title": "Chapters",
+            "default": []
+          },
+          "open_questions": {
+            "items": {
+              "$ref": "#/components/schemas/OpenQuestion"
+            },
+            "type": "array",
+            "title": "Open Questions",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "Insights"
+      },
+      "InsightsOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "default": false
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Insights"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "InsightsOut",
+        "description": "`data` is the latest finished run, even while a newer run is going or has failed."
       },
       "JobOut": {
         "properties": {
@@ -818,6 +1379,35 @@
           "stages"
         ],
         "title": "JobOut"
+      },
+      "OpenQuestion": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "unverified"
+            ],
+            "title": "Status",
+            "default": "verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "OpenQuestion"
       },
       "RecordingOut": {
         "properties": {
@@ -1076,6 +1666,35 @@
           "status"
         ],
         "title": "StageOut"
+      },
+      "SummaryPoint": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "unverified"
+            ],
+            "title": "Status",
+            "default": "verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "SummaryPoint"
       },
       "TranscriptOut": {
         "properties": {

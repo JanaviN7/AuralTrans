@@ -5,10 +5,13 @@ synchronized playback. Built from the AuralTrans 2.0 Rebuild Blueprint.
 
 **What works today**
 
-Library, New recording, live Processing, then a workspace with **Transcript** and **Speakers**
-tabs, plus exports (SRT, VTT, TXT, Markdown, JSON). Processing runs in a background worker and
-resumes from checkpoints after a failure or a crash. **Insights** and **Ask** appear as tabs but
-say plainly that they are not built yet: they need the LLM phase of the blueprint.
+Library, New recording, live Processing, then a workspace with **Transcript**, **Insights**,
+**Speakers** and **Ask** tabs, plus exports (SRT, VTT, TXT, Markdown, JSON). Processing runs in a
+background worker and resumes from checkpoints after a failure or a crash.
+
+**Insights** (summary, key points, decisions, action items, open questions, chapters) and **Ask**
+(questions about one recording) need a language model. Without one configured, those two tabs say
+so and everything else still works. See "Language model" below.
 
 Also not built: DOCX export, recording in the browser, live mode, authentication.
 
@@ -24,7 +27,7 @@ cd backend
 copy ..\.env.example .env                          # 2. then put your HF_TOKEN in backend\.env
 python -m pip install uv
 python -m uv sync --extra speech                   # 3. installs torch, faster-whisper, pyannote (large)
-python -m uv run alembic upgrade head              # 4. create the tables
+python -m uv run alembic upgrade head              # 4. create / update the tables
 
 cd ..\web
 npm install                                        # 5. web dependencies
@@ -51,6 +54,39 @@ audio or video file, watch it process, and the transcript opens when it is done.
 recording takes roughly 20 minutes. Use short clips to try it, or run the worker on a GPU machine
 (set `ASR_DEVICE=cuda`, `ASR_COMPUTE_TYPE=float16`).
 
+## Language model (Insights and Ask)
+
+Any OpenAI-compatible chat endpoint works. Set these in `backend/.env` and restart the API:
+
+```
+LLM_BASE_URL=https://api.groq.com/openai/v1      # or http://localhost:11434/v1 for Ollama
+LLM_API_KEY=...                                  # not needed for Ollama
+LLM_MODEL=...                                    # a model id your provider serves
+```
+
+The Hugging Face router needs paid credits, so it is not a free option. Groq's free tier or a local
+Ollama model are. Insights are generated on demand from the Insights tab (the speech pipeline is
+not involved), and Ask is called per question.
+
+**How answers are kept grounded.** The model sees the transcript as `[u12 03:21 Speaker 2] text`
+lines and must cite lines by id. The model's JSON is then checked by code, not trusted:
+
+- Output must match the schema; one repair attempt with the errors fed back, then a visible failure.
+- Cited ids that do not exist are removed. A statement left with no evidence is dropped.
+- A statement whose wording or numbers are not found in its cited lines is shown with a
+  "Check source" badge. Chapters must reference real lines and are ordered and de-overlapped.
+- **Ask** needs a verbatim quote with each citation, and the quote must appear in the cited line.
+  If the model declines, cites nothing valid, or the answer does not match its citations, the app
+  answers "I can't find that in this recording" and says why. Abstentions are stored too.
+- Insights are flagged stale if transcript text is edited afterwards; every model call is logged
+  in `llm_calls`.
+
+These checks are lexical (word and number overlap), not full entailment, so they catch invented
+ids, invented numbers and unrelated citations, but a plausible paraphrase of the wrong line can
+pass. Ask puts the whole transcript in the prompt (no retrieval yet), so very long recordings
+(over `LLM_CONTEXT_CHARS`, 60,000 characters, about an hour of speech) are refused with a clear message.
+Each question is answered independently; there is no follow-up memory.
+
 ## Settings (`backend/.env`)
 
 | Variable | Default | Meaning |
@@ -61,6 +97,8 @@ recording takes roughly 20 minutes. Use short clips to try it, or run the worker
 | `ASR_MODEL` | `small` | Whisper size: `tiny`, `small`, `medium`, ... |
 | `ASR_DEVICE` / `ASR_COMPUTE_TYPE` | `cpu` / `int8` | use `cuda` / `float16` on a GPU |
 | `MAX_UPLOAD_MB` | `500` | upload size limit |
+| `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY` | empty | language model for Insights and Ask (off when unset) |
+| `LLM_CHUNK_CHARS` / `LLM_CONTEXT_CHARS` | `24000` / `60000` | Insights chunk size / Ask transcript size limit |
 
 ## How it fits together
 
@@ -76,6 +114,7 @@ browser ── /api ──> FastAPI (never loads models)
 - `backend/src/auraltrans/speech/`: the speech core (Whisper, pyannote, word-to-speaker alignment).
 - `backend/src/auraltrans/pipeline/`, `worker/`: checkpointed stages and the Postgres-queue worker.
 - `backend/src/auraltrans/api/`: REST endpoints and the SSE progress stream.
+- `backend/src/auraltrans/{llm,insights,ask}/`: model client, insight generation plus validation, grounded Q&A.
 - `web/`: React + TypeScript. Types are generated from the API schema:
   `cd backend; python -m uv run python -m auraltrans.api.dump_openapi > ../web/openapi.json`, then
   `cd ../web; npm run gen:api`.

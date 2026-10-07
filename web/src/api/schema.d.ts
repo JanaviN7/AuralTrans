@@ -216,10 +216,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recordings/{recording_id}/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Insights */
+        get: operations["get_insights_api_recordings__recording_id__insights_get"];
+        put?: never;
+        /** Generate Insights */
+        post: operations["generate_insights_api_recordings__recording_id__insights_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recordings/{recording_id}/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ask History */
+        get: operations["ask_history_api_recordings__recording_id__ask_get"];
+        put?: never;
+        /** Ask Question */
+        post: operations["ask_question_api_recordings__recording_id__ask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionItem */
+        ActionItem: {
+            /** Task */
+            task: string;
+            /** Owner Speaker Id */
+            owner_speaker_id?: string | null;
+            /** Due Text */
+            due_text?: string | null;
+            /** Evidence */
+            evidence?: components["schemas"]["Citation"][];
+            /**
+             * Status
+             * @default verified
+             * @enum {string}
+             */
+            status: "verified" | "unverified";
+        };
         /** AnalyticsOut */
         AnalyticsOut: {
             /** Duration S */
@@ -228,6 +281,54 @@ export interface components {
             silence_ratio: number;
             /** Speakers */
             speakers: components["schemas"]["SpeakerStatsOut"][];
+        };
+        /** AskCitationOut */
+        AskCitationOut: {
+            /** Uid */
+            uid: string;
+            /**
+             * Utterance Id
+             * Format: uuid
+             */
+            utterance_id: string;
+            /** Speaker Id */
+            speaker_id: string | null;
+            /** Start S */
+            start_s: number;
+            /** End S */
+            end_s: number;
+            /** Quote */
+            quote: string;
+        };
+        /** AskIn */
+        AskIn: {
+            /** Question */
+            question: string;
+        };
+        /** AskTurnOut */
+        AskTurnOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Question */
+            question: string;
+            /** Answer */
+            answer: string;
+            /** Abstained */
+            abstained: boolean;
+            /** Abstain Reason */
+            abstain_reason: ("model_declined" | "no_valid_citation" | "unsupported_answer") | null;
+            /** Citations */
+            citations: components["schemas"]["AskCitationOut"][];
+            /** Model */
+            model: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** Body_upload_recording_api_recordings_post */
         Body_upload_recording_api_recordings_post: {
@@ -246,6 +347,33 @@ export interface components {
             min_speakers?: number | null;
             /** Max Speakers */
             max_speakers?: number | null;
+        };
+        /** Chapter */
+        Chapter: {
+            /** Title */
+            title: string;
+            /** Start Uid */
+            start_uid: string;
+            /** End Uid */
+            end_uid: string;
+        };
+        /** Citation */
+        Citation: {
+            /** Utterance Id */
+            utterance_id: string;
+        };
+        /** Decision */
+        Decision: {
+            /** Text */
+            text: string;
+            /** Evidence */
+            evidence?: components["schemas"]["Citation"][];
+            /**
+             * Status
+             * @default verified
+             * @enum {string}
+             */
+            status: "verified" | "unverified";
         };
         /** FeaturesOut */
         FeaturesOut: {
@@ -267,6 +395,64 @@ export interface components {
              */
             status: "ok";
             features: components["schemas"]["FeaturesOut"];
+        };
+        /** Insights */
+        Insights: {
+            summary?: components["schemas"]["SummaryPoint"] | null;
+            /**
+             * Key Points
+             * @default []
+             */
+            key_points: components["schemas"]["SummaryPoint"][];
+            /**
+             * Decisions
+             * @default []
+             */
+            decisions: components["schemas"]["Decision"][];
+            /**
+             * Action Items
+             * @default []
+             */
+            action_items: components["schemas"]["ActionItem"][];
+            /**
+             * Chapters
+             * @default []
+             */
+            chapters: components["schemas"]["Chapter"][];
+            /**
+             * Open Questions
+             * @default []
+             */
+            open_questions: components["schemas"]["OpenQuestion"][];
+        };
+        /**
+         * InsightsOut
+         * @description `data` is the latest finished run, even while a newer run is going or has failed.
+         */
+        InsightsOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "none" | "running" | "done" | "failed";
+            /** Error */
+            error?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Version */
+            version?: number | null;
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Stale
+             * @default false
+             */
+            stale: boolean;
+            data?: components["schemas"]["Insights"] | null;
+            /** Validation */
+            validation?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** JobOut */
         JobOut: {
@@ -290,6 +476,19 @@ export interface components {
             error: string | null;
             /** Stages */
             stages: components["schemas"]["StageOut"][];
+        };
+        /** OpenQuestion */
+        OpenQuestion: {
+            /** Text */
+            text: string;
+            /** Evidence */
+            evidence?: components["schemas"]["Citation"][];
+            /**
+             * Status
+             * @default verified
+             * @enum {string}
+             */
+            status: "verified" | "unverified";
         };
         /** RecordingOut */
         RecordingOut: {
@@ -382,6 +581,19 @@ export interface components {
             status: "pending" | "running" | "done" | "skipped" | "failed";
             /** Seconds */
             seconds?: number | null;
+        };
+        /** SummaryPoint */
+        SummaryPoint: {
+            /** Text */
+            text: string;
+            /** Evidence */
+            evidence?: components["schemas"]["Citation"][];
+            /**
+             * Status
+             * @default verified
+             * @enum {string}
+             */
+            status: "verified" | "unverified";
         };
         /** TranscriptOut */
         TranscriptOut: {
@@ -887,6 +1099,134 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_insights_api_recordings__recording_id__insights_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_insights_api_recordings__recording_id__insights_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_history_api_recordings__recording_id__ask_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskTurnOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_question_api_recordings__recording_id__ask_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskTurnOut"];
                 };
             };
             /** @description Validation Error */

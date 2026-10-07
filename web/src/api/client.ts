@@ -1,4 +1,4 @@
-import type { Analytics, ExportFormat, Health, Job, Recording, Speaker, Transcript, Utterance } from "./types";
+import type { Analytics, AskTurn, InsightsResponse, ExportFormat, Health, Job, Recording, Speaker, Transcript, Utterance } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -56,6 +56,10 @@ export const api = {
     request<Speaker>(`/api/recordings/${recordingId}/speakers/${speakerId}`, json("PATCH", { display_name: displayName })),
   editUtterance: (utteranceId: string, text: string) =>
     request<Utterance>(`/api/utterances/${utteranceId}`, json("PATCH", { text })),
+  getInsights: (id: string) => request<InsightsResponse>(`/api/recordings/${id}/insights`),
+  generateInsights: (id: string) => request<InsightsResponse>(`/api/recordings/${id}/insights`, { method: "POST" }),
+  getAsk: (id: string) => request<AskTurn[]>(`/api/recordings/${id}/ask`),
+  ask: (id: string, question: string) => request<AskTurn>(`/api/recordings/${id}/ask`, json("POST", { question })),
   audioUrl: (id: string) => `/api/recordings/${id}/audio`,
   exportUrl: (id: string, format: ExportFormat) => `/api/recordings/${id}/export?format=${format}`,
 };
