@@ -1,5 +1,5 @@
 from auraltrans.schemas.insights import ActionItem, Chapter, Citation, Insights
-from auraltrans.schemas.transcript import Speaker, Transcript, Utterance, Word
+from auraltrans.schemas.transcript import Speaker, Transcript, Turn, Utterance, Word
 
 __all__ = [
     "ActionItem",
@@ -8,6 +8,7 @@ __all__ = [
     "Insights",
     "Speaker",
     "Transcript",
+    "Turn",
     "Utterance",
     "Word",
 ]

@@ -14,6 +14,14 @@ class Word(BaseModel):
         return self
 
 
+class Turn(BaseModel):
+    """A diarization segment: one speaker active between start and end."""
+
+    speaker: str
+    start: float = Field(ge=0)
+    end: float = Field(ge=0)
+
+
 class Speaker(BaseModel):
     id: str  # diarization label, e.g. SPEAKER_00
     display_name: str | None = None
