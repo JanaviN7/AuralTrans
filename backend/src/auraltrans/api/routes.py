@@ -32,6 +32,7 @@ from auraltrans.api.schemas import (
 from auraltrans.db.models import Job, Recording, Speaker, Utterance
 from auraltrans.db.session import session_scope
 from auraltrans.exporters import EXPORTERS
+from auraltrans.llm import LLM, get_llm
 from auraltrans.pipeline.stages import key
 from auraltrans.storage import Storage, get_storage
 
@@ -77,9 +78,10 @@ def _require_ready(rec: Recording | None) -> Recording:
 
 
 @router.get("/health", response_model=HealthOut)
-def health() -> HealthOut:
-    # Insights and Ask need an LLM pipeline that is not built yet; the UI reads these flags.
-    return HealthOut(status="ok", features=FeaturesOut(insights=False, ask=False))
+def health(llm: Annotated[LLM | None, Depends(get_llm)]) -> HealthOut:
+    # Insights and Ask need a configured language model; the UI reads these flags.
+    on = llm is not None
+    return HealthOut(status="ok", features=FeaturesOut(insights=on, ask=on))
 
 
 # --- recordings --------------------------------------------------------------------------------

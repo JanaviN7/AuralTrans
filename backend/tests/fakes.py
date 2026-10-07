@@ -1,7 +1,10 @@
 """Stand-ins for the real models: canned two-speaker conversation, with call counters."""
 
+import json
+from collections.abc import Callable
 from pathlib import Path
 
+from auraltrans.llm import LLMResult
 from auraltrans.schemas import Turn, Word
 from auraltrans.speech.asr import AsrResult, AsrSegment
 from auraltrans.speech.audio import PreparedAudio
@@ -66,3 +69,22 @@ def fake_prepare_audio(src: Path, dst: Path, max_duration_s: float = 0) -> Prepa
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_bytes(src.read_bytes())
     return PreparedAudio(path=dst, duration_s=DURATION_S)
+
+
+class ScriptedLLM:
+    """Returns canned replies in order (a str, a dict -> JSON, or a callable); the last one repeats."""
+
+    model = "fake-llm"
+
+    def __init__(self, *replies: "str | dict | Callable[[str, str], str]") -> None:  # type: ignore[type-arg]
+        self.replies = list(replies)
+        self.calls: list[tuple[str, str]] = []
+
+    def complete(self, system: str, user: str, *, max_tokens: int = 2000) -> LLMResult:
+        self.calls.append((system, user))
+        reply = self.replies.pop(0) if len(self.replies) > 1 else self.replies[0]
+        if callable(reply):
+            text = reply(system, user)
+        else:
+            text = reply if isinstance(reply, str) else json.dumps(reply)
+        return LLMResult(text=text, model=self.model, input_tokens=len(user) // 4, output_tokens=len(text) // 4, latency_ms=5)

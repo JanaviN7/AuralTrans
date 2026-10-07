@@ -1,3 +1,5 @@
+"""Validated insight payload. `utterance_id` in a Citation is the transcript's `uN` id."""
+
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -10,6 +12,7 @@ class Citation(BaseModel):
 class _Cited(BaseModel):
     text: str
     evidence: list[Citation] = Field(default_factory=list)
+    # "unverified": the cited lines exist but share little wording (or numbers) with the claim.
     status: Literal["verified", "unverified"] = "verified"
 
 
@@ -40,7 +43,8 @@ class Chapter(BaseModel):
 
 
 class Insights(BaseModel):
-    summary: list[SummaryPoint] = []
+    summary: SummaryPoint | None = None
+    key_points: list[SummaryPoint] = []
     decisions: list[Decision] = []
     action_items: list[ActionItem] = []
     chapters: list[Chapter] = []

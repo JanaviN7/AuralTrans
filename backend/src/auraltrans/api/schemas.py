@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from auraltrans.schemas.insights import Insights
+
 StageStatus = Literal["pending", "running", "done", "skipped", "failed"]
 
 
@@ -110,3 +112,40 @@ class FeaturesOut(BaseModel):
 class HealthOut(BaseModel):
     status: Literal["ok"]
     features: FeaturesOut
+
+
+class InsightsOut(BaseModel):
+    """`data` is the latest finished run, even while a newer run is going or has failed."""
+
+    status: Literal["none", "running", "done", "failed"]
+    error: str | None = None
+    model: str | None = None
+    version: int | None = None
+    created_at: datetime | None = None
+    stale: bool = False  # transcript text was edited after these insights were generated
+    data: Insights | None = None
+    validation: dict[str, object] | None = None
+
+
+class AskIn(BaseModel):
+    question: str = Field(min_length=3, max_length=500)
+
+
+class AskCitationOut(BaseModel):
+    uid: str
+    utterance_id: uuid.UUID
+    speaker_id: uuid.UUID | None
+    start_s: float
+    end_s: float
+    quote: str
+
+
+class AskTurnOut(BaseModel):
+    id: uuid.UUID
+    question: str
+    answer: str
+    abstained: bool
+    abstain_reason: Literal["model_declined", "no_valid_citation", "unsupported_answer"] | None
+    citations: list[AskCitationOut]
+    model: str
+    created_at: datetime

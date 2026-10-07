@@ -4,7 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from auraltrans.api.llm_routes import router as llm_router
 from auraltrans.api.routes import router
+from auraltrans.llm import GroundingError, LLMError
 from auraltrans.recordings import UploadError
 
 
@@ -22,11 +24,20 @@ def create_app() -> FastAPI:
     async def upload_error(_: Request, exc: UploadError) -> JSONResponse:
         return JSONResponse({"detail": str(exc)}, status_code=exc.status)
 
+    @app.exception_handler(LLMError)
+    async def llm_error(_: Request, exc: LLMError) -> JSONResponse:
+        return JSONResponse({"detail": str(exc)}, status_code=502)
+
+    @app.exception_handler(GroundingError)
+    async def grounding_error(_: Request, exc: GroundingError) -> JSONResponse:
+        return JSONResponse({"detail": str(exc)}, status_code=502)
+
     @app.exception_handler(LookupError)
     async def not_found(_: Request, exc: LookupError) -> JSONResponse:
         return JSONResponse({"detail": str(exc)}, status_code=404)
 
     app.include_router(router)
+    app.include_router(llm_router)
     return app
 
 

@@ -101,6 +101,10 @@ class Insight(Base):
     prompt_version: Mapped[str] = mapped_column(String(40))
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
     validation: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="done", server_default="done")
+    error: Mapped[str | None] = mapped_column(Text)
+    # Hash of the utterance texts the insights were generated from; a mismatch means "stale".
+    transcript_hash: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = _created()
 
 
@@ -113,6 +117,9 @@ class QATurn(Base):
     citations: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     model: Mapped[str] = mapped_column(String(200))
     latency_ms: Mapped[int | None] = mapped_column(Integer)
+    abstained: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    abstain_reason: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = _created()
 
 
 class LLMCall(Base):

@@ -11,6 +11,7 @@ from auraltrans.api.app import create_app
 from auraltrans.config import settings
 from auraltrans.db.models import Job
 from auraltrans.db.session import session_scope
+from auraltrans.llm import get_llm
 from auraltrans.storage import get_storage
 from auraltrans.storage.local import LocalStorage
 from auraltrans.worker.runner import run_once
@@ -28,6 +29,7 @@ def _no_ffmpeg(monkeypatch: pytest.MonkeyPatch) -> None:
 def client(db, storage: LocalStorage) -> Iterator[TestClient]:  # type: ignore[no-untyped-def]
     app = create_app()
     app.dependency_overrides[get_storage] = lambda: storage
+    app.dependency_overrides[get_llm] = lambda: None
     with TestClient(app) as c:
         yield c
 
