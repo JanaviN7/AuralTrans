@@ -48,7 +48,7 @@ class FasterWhisperBackend:
         if device == "cuda":
             from faster_whisper import BatchedInferencePipeline
 
-            self._batched = BatchedInferencePipeline(model=self._model)  # type: ignore[no-untyped-call]
+            self._batched = BatchedInferencePipeline(model=self._model)  # type: ignore[no-untyped-call, unused-ignore]  # untyped only when faster-whisper is installed
 
     def transcribe(self, audio_path: Path, language: str | None = None) -> AsrResult:
         runner = self._batched or self._model
