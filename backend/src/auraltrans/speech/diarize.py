@@ -54,7 +54,13 @@ class PyannoteDiarizer:
         min_speakers: int | None = None,
         max_speakers: int | None = None,
     ) -> DiarizationResult:
-        output = self._pipeline(str(audio_path), min_speakers=min_speakers, max_speakers=max_speakers)
+        import soundfile as sf
+        import torch
+
+        # Decode ourselves (our prepared audio is 16 kHz mono WAV) so pyannote doesn't need torchcodec.
+        data, sample_rate = sf.read(str(audio_path), dtype="float32", always_2d=True)
+        audio = {"waveform": torch.from_numpy(data.T.copy()), "sample_rate": sample_rate}
+        output = self._pipeline(audio, min_speakers=min_speakers, max_speakers=max_speakers)
 
         def to_turns(annotation: Any) -> list[Turn]:
             return [
