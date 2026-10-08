@@ -178,7 +178,7 @@ def cpwer_meeteval(reference: list[SpeakerText], hypothesis: list[SpeakerText]) 
             for i in items
         ]
 
-    result = meeteval.wer.cpwer(seglst(reference), seglst(hypothesis))["s"]
+    result = meeteval.wer.cpwer(seglst(reference), seglst(hypothesis))["s"]  # type: ignore[no-untyped-call, unused-ignore]
     return ErrorCounts(
         errors=result.errors,
         length=result.length,
